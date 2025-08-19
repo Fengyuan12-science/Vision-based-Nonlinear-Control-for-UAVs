@@ -1,0 +1,14 @@
+# first terminal
+export GAZEBO_MODEL_DATABASE_URI=""   
+export LIBGL_ALWAYS_SOFTWARE=0        
+roslaunch /home/fengyuanliu/PX4-Autopilot/launch/posix_sitl.launch \world:=/home/fengyuanliu/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/worlds/empty.world \ vehicle:=iris_depth_camera \ sdf:=/home/fengyuanliu/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models/iris_depth_camera/iris_depth_camera.sdf \ respawn_gazebo:=false
+
+# second terminal
+source /opt/ros/noetic/setup.bash
+export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$HOME/PX4-Autopilot
+rospack find px4          
+roslaunch mavros px4.launch fcu_url:=udp://:14540@127.0.0.1:14557 gcs_url:=
+
+# third terminal
+source ~/catkin_ws/devel/setup.bash
+roslaunch vision_lyapunov_avoidance min_avoid.launch
