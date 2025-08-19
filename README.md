@@ -9,7 +9,7 @@ Vision-based Nonlinear UAV Control with Real-time Obstacle Avoidance using PX4, 
 ![System Architecture](images/IMG_5696.png)
 ![System Architecture](images/IMG_5753.png)
 # Video:
-[click here to view the obstacle avoidance video](videos/VIsion-based Nonlinear Control for UAVs.mp4)
+[![Watch the video](https://img.youtube.com/vi/Q4WJSX4zhF4/0.jpg)](https://youtu.be/Q4WJSX4zhF4)
 
 # System Architecture:
 ![System Architecture](images/image.png)
