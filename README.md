@@ -2,17 +2,17 @@
 Vision-based Nonlinear UAV Control with Real-time Obstacle Avoidance using PX4, ROS, Lyapunov and Control Barrier Functions(CBF).
 
 # Poster:
-![System Architecture](poster.png)
+![System Architecture](images/poster.png)
 
 
-![System Architecture](IMG_5661.png)
-![System Architecture](IMG_5696.png)
-![System Architecture](IMG_5753.png)
+![System Architecture](images/IMG_5661.png)
+![System Architecture](images/IMG_5696.png)
+![System Architecture](images/IMG_5753.png)
 # Video:
 
 
 # System Architecture:
-![System Architecture](image.png)
+![System Architecture](images/image.png)
 This project has implemented an unmanned aerial vehicle (UAV) Control and obstacle avoidance system based on PX4 + ROS, integrating nonlinear Lyapunov control and Control Barrier Function (CBF), and supporting a smooth migration from simulation to the actual aircraft. The system operates in map-free, depth-only and real-time scenarios, and has robustness and real-time performance.
 
 The system as a whole is divided into five major parts: perception layer → planning and safety layer → control layer → task layer → flight control/ground station. 
@@ -319,7 +319,7 @@ roslaunch vision_lyapunov_avoidance min_avoid.launch
 - **Propulsion**: 2216-920KV motors + 1045 propellers
 
 Figure: Front view of the UAV platform showing Pixhawk, Companion Computer,  and depth camera
-![System Architecture](6a0b093e372e3255561ac6b85d6fa22c.jpg)
+![System Architecture](images/6a0b093e372e3255561ac6b85d6fa22c.jpg)
 
 
 
