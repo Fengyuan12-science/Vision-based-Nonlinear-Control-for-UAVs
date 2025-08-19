@@ -51,4 +51,11 @@ Control Layer → Task Layer: Provides posture/position feedback and supports lo
 Mission Layer ↔ Flight Control & Ground Station: Two-way communication ensures real-time mission execution and manual intervention.
 
 # Installation
+The following is a step-by-step guide for installing and building all prerequisites for running obstacle avoidance modules on Ubuntu 20.04 + ROS (including Gazebo 11) +PX4 and drones based on further reducing flight weight through structural optimization of Holybro X500 V2. If a part of your system has already been installed, you can skip the corresponding steps.
+
+Note: The following description assumes
+Your catkin workspace is at ~/catkin_ws
+The PX4-Autopilot directory is at ~/Home
+You can also make adjustments according to the actual situation.
+
 
