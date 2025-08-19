@@ -17,12 +17,12 @@ class MinimalAvoidAllInOne:
         self._vz_sign  = -1.0 if 'BODY_NED' in self.mav_frame.upper() else 1.0
         rospy.loginfo("cmd_vel frame = %s, vz_sign = %+.1f", self.mav_frame, self._vz_sign)
 
-        # ===== 量程/破对称等 =====
+        #Range/breaking symmetry
         self.range_cap      = float(rospy.get_param('~range_cap', 8.0))
         self.asym_bias_deg  = float(rospy.get_param('~asym_bias_deg', 4.0))
 
-        # ===== 基本参数 =====
-        # ★CHG: 默认改为真正的深度话题
+        # Basic parameters
+        
         self.depth_topic    = rospy.get_param('~depth_topic', '/iris/depth_camera/depth/image_raw')
         self.safe_distance  = float(rospy.get_param('~safe_distance', 1.8))
         self.release_margin = float(rospy.get_param('~release_margin', 0.4))
@@ -33,7 +33,7 @@ class MinimalAvoidAllInOne:
         self.rate_hz        = float(rospy.get_param('~rate', 30.0))
         self.vmax_xy        = float(rospy.get_param('~vmax_xy', 1.0))
 
-        # ===== 反应式(Lyapunov/CBF) =====
+        #(Lyapunov/CBF) Reaction formula
         self.react_tau      = float(rospy.get_param('~react_tau', 0.8))
         self.k_side         = float(rospy.get_param('~k_side', 1.1))
         self.k_forward      = float(rospy.get_param('~k_forward', 0.6))
@@ -42,7 +42,7 @@ class MinimalAvoidAllInOne:
         self.ttc_thresh     = float(rospy.get_param('~ttc_thresh', 3.0))
         self.cbf_relax_eps  = float(rospy.get_param('~cbf_relax_eps', 0.05))
 
-        # ===== 预测规划（短视域） =====
+        #Predictive Planning (Short Time Domain)
         self.pred_enabled   = bool(rospy.get_param('~pred_enabled', True))
         self.mpc_horizon    = float(rospy.get_param('~mpc_horizon', 1.2))
         self.mpc_num_angles = int(rospy.get_param('~mpc_num_angles', 11))
@@ -51,13 +51,13 @@ class MinimalAvoidAllInOne:
         self.mpc_w_prog     = float(rospy.get_param('~mpc_w_prog', 0.8))
         self.mpc_v_scale    = float(rospy.get_param('~mpc_v_scale', 1.0))
 
-        # ===== 起飞/任务 =====
+        # Takeoff/Mission
         self.alt_target     = float(rospy.get_param('~target_alt', 1.5))
         self.climb_vz       = float(rospy.get_param('~climb_vz', 0.8))
         self.loop_mission   = bool(rospy.get_param('~loop_mission', True))
         self.mission_time   = float(rospy.get_param('~mission_time', 40.0))
 
-        # ===== 通信 =====
+        # Communication
         self.bridge   = CvBridge()
         self.v_pub    = rospy.Publisher('/lyapunov_value', Float32, queue_size=10)
         self.near_pub = rospy.Publisher('/nearest_obstacle', Float32, queue_size=10)
@@ -79,7 +79,7 @@ class MinimalAvoidAllInOne:
         self.arm_srv  = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
         self.mode_srv = rospy.ServiceProxy('/mavros/set_mode', SetMode)
 
-        # ===== 状态量 =====
+        # State quantity
         self.d_filt = None
         self.d_use  = None
         self.phase  = 'INIT'
@@ -89,11 +89,11 @@ class MinimalAvoidAllInOne:
 
         self.rate = rospy.Rate(self.rate_hz)
         if self.depth_topic.endswith('/image_raw') and '/depth/' not in self.depth_topic:
-            rospy.logwarn("depth_topic 看起来像 RGB 而不是深度：%s", self.depth_topic)
+            rospy.logwarn("depth_topic seems like RGB not depth：%s", self.depth_topic)
         rospy.loginfo('MinimalAvoidAllInOne subscribing %s', self.depth_topic)
         self.main_loop()
 
-    # -------------------- 回调 --------------------
+    # Callback
     def state_cb(self, msg): self.state = msg
     def pose_cb(self, msg):
         self.alt = msg.pose.position.z
@@ -102,7 +102,7 @@ class MinimalAvoidAllInOne:
         q = msg.pose.orientation
         _, _, self.yaw = euler_from_quaternion([q.x, q.y, q.z, q.w])
 
-    # -------------------- 深度扇区 --------------------
+    # Deep sector
     def _sector_depths(self, depth):
         h, w = depth.shape[:2]; win = self.window; cx = w // 2
         y0, y1 = max(0, h//2 - win//2), min(h, h//2 + win//2)
@@ -127,7 +127,7 @@ class MinimalAvoidAllInOne:
         theta_q = np.clip(theta_query, ths.min(), ths.max())
         return float(np.interp(theta_q, ths, vals))
 
-    # -------------------- 图像回调 --------------------
+    # Image callback
     def depth_cb(self, msg):
         try:
             depth = self.bridge.imgmsg_to_cv2(msg, desired_encoding='32FC1'); scale = 1.0
@@ -157,7 +157,7 @@ class MinimalAvoidAllInOne:
         self.v_pub.publish(Float32(V))
 
         if self.phase == 'NAV':
-            # ---- A) 反应式 ----
+            # Reaction formula
             safe_eff = self.safe_distance + self.react_tau * self.forward_speed
             side_gain = -self.k_side if self.flip_side else self.k_side
 
@@ -188,17 +188,17 @@ class MinimalAvoidAllInOne:
 
             u_react = np.array([vx_des, vy_des], dtype=np.float32)
 
-            # ---- B) 预测性 ----
+            # Predictive
             if self.pred_enabled:
                 u_pred, plan_markers = self._predictive_sample(d_list, thetas)
             else:
                 u_pred, plan_markers = u_react.copy(), None
 
-            # ---- C) 融合 ----
+            # merge
             gamma = 0.8 if (self.d_use is not None and self.d_use < self.safe_distance + 0.6) else 0.35
             u_des = (1.0 - gamma) * u_react + gamma * u_pred
 
-            # ---- D) CBF ----
+            # CBF 
             if self.d_use is not None:
                 idx_min = int(np.argmin([d if d > 0 else 1e9 for d in d_list]))
                 theta   = thetas[idx_min]
@@ -210,7 +210,7 @@ class MinimalAvoidAllInOne:
             else:
                 u = u_des
 
-            # ---- E) 限幅 + 平滑 + jerk ----
+            # Limiting + smoothing + jerk 
             u[0] = np.clip(u[0], -self.vmax_xy, self.vmax_xy)
             u[1] = np.clip(u[1], -self.vmax_xy, self.vmax_xy)
             if self.u_filt is None: self.u_filt = u.copy()
@@ -227,13 +227,13 @@ class MinimalAvoidAllInOne:
 
             self.last_cmd_xy = (float(u_cmd[0]), float(u_cmd[1]))
 
-            # 可视化
+            # Visualization
             self._publish_markers(u_cmd, u_des, n if self.d_use is not None else None)
             self._publish_sectors(d_list, thetas)
             if plan_markers is not None:
                 self.plan_pub.publish(plan_markers)
 
-    # -------------------- 预测性：候选采样 + 打分 --------------------
+    # Predictability: Candidate sampling + scoring
     def _predictive_sample(self, d_list, thetas):
         angs = np.deg2rad(np.linspace(-self.mpc_max_deg, self.mpc_max_deg, self.mpc_num_angles))
         v_nom = self.forward_speed * self.mpc_v_scale
@@ -274,7 +274,7 @@ class MinimalAvoidAllInOne:
 
         return np.array([best_vx, best_vy], dtype=np.float32), mk
 
-    # -------------------- 可视化 --------------------
+    # Visualization
     def _make_arrow(self, mid, frame, p0, p1, rgba):
         m = Marker(); m.header.frame_id = frame; m.id = mid
         m.type = Marker.ARROW; m.action = Marker.ADD
@@ -304,19 +304,19 @@ class MinimalAvoidAllInOne:
             m.points=[p0,p1]; arr.markers.append(m)
         self.m_pub.publish(arr)
 
-    # -------------------- 主循环（位置起飞 → 速度导航） --------------------
+    # main loop (Position takeoff -> Speed navigation)
     def main_loop(self):
         while not rospy.is_shutdown() and not self.state.connected:
             self._send_cmd(0, 0, 0)
             rospy.loginfo_throttle(2.0, "Waiting for MAVROS connection...")
             self.rate.sleep()
 
-        # 等本地位姿可用
+        # When this position and posture are available
         rospy.loginfo("Waiting for /mavros/local_position/pose ...")
         pose0 = rospy.wait_for_message('/mavros/local_position/pose', PoseStamped, timeout=5.0)
         x0, y0 = pose0.pose.position.x, pose0.pose.position.y
 
-        # ★NEW: 预热(2s)：同时发速度和位置setpoint，确保切换OFFBOARD安全
+        # Preheating (2 seconds): Both belong to the setpoint for sending speed and position, ensuring the safety of switching OFFBOARD
         self.phase = 'WARM'
         for _ in range(int(self.rate_hz*2.0)):
             self._send_cmd(0, 0, 0)
@@ -325,8 +325,6 @@ class MinimalAvoidAllInOne:
             p.pose.orientation = pose0.pose.orientation
             self.pos_pub.publish(p)
             self.rate.sleep()
-
-        # ★NEW: 先 set_mode=OFFBOARD 再 arm（都在有连续setpoint的情况下）
         try:
             self.mode_srv(0, 'OFFBOARD'); rospy.sleep(0.2)
             self.arm_srv(True)
@@ -334,19 +332,17 @@ class MinimalAvoidAllInOne:
         except Exception as e:
             rospy.logerr('Arm/Mode failed: %s', e); return
 
-        # ★NEW: TAKEOFF 用位置 setpoint 抬升到 alt_target
         self.phase = 'TAKEOFF'
         tol = 0.10
         z_cmd = max(self.alt, 0.2)
         while not rospy.is_shutdown() and self.alt < self.alt_target - tol:
-            z_cmd = min(self.alt_target, z_cmd + 0.05)  # 每步抬 5cm
+            z_cmd = min(self.alt_target, z_cmd + 0.05)  
             p = PoseStamped(); p.header.stamp = rospy.Time.now()
             p.pose.position.x = x0; p.pose.position.y = y0; p.pose.position.z = z_cmd
             p.pose.orientation = pose0.pose.orientation
             self.pos_pub.publish(p)
             self.rate.sleep()
-
-        # 悬停 1s 稳态
+            
         for _ in range(int(self.rate_hz*1.0)):
             p = PoseStamped(); p.header.stamp = rospy.Time.now()
             p.pose.position.x = x0; p.pose.position.y = y0; p.pose.position.z = self.alt_target
@@ -356,7 +352,6 @@ class MinimalAvoidAllInOne:
 
         rospy.loginfo('Reached altitude %.2fm', self.alt)
 
-        # NAV：切回速度控制
         self.phase = 'NAV'
         start_nav = rospy.Time.now()
         while not rospy.is_shutdown():
@@ -383,8 +378,7 @@ class MinimalAvoidAllInOne:
                 self._send_cmd(0,0,0)
 
             self.rate.sleep()
-
-    # -------------------- 机体 -> ENU 旋转后发布 --------------------
+            
     def _send_cmd(self, vx_body, vy_body, vz):
         cy, sy = np.cos(self.yaw), np.sin(self.yaw)
         vx_enu =  cy*vx_body - sy*vy_body
