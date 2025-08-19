@@ -4,7 +4,8 @@ Vision-based Nonlinear UAV Control with Real-time Obstacle Avoidance using PX4, 
 ![System Architecture](image.png)
 This project has implemented an unmanned aerial vehicle (UAV) Control and obstacle avoidance system based on PX4 + ROS, integrating nonlinear Lyapunov control and Control Barrier Function (CBF), and supporting a smooth migration from simulation to the actual aircraft. The system operates in map-free, depth-only and real-time scenarios, and has robustness and real-time performance.
 
-The system as a whole is divided into five major parts: perception layer → planning and safety layer → control layer → task layer → flight control/ground station. The data and control flow between the modules are as follows:
+The system as a whole is divided into five major parts: perception layer → planning and safety layer → control layer → task layer → flight control/ground station. 
+The data and control flow between the modules are as follows:
 1. Hardware and sensor input
 
 Sensors (GPS, IMU, binocular cameras) collect environmental and flight status information.
