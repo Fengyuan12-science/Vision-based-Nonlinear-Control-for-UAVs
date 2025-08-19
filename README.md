@@ -1,11 +1,13 @@
 # Vision-based-Nonlinear-Control-for-UAVs
 Vision-based Nonlinear UAV Control with Real-time Obstacle Avoidance using PX4, ROS, Lyapunov and Control Barrier Functions(CBF).
-![System Architecture]()
-![System Architecture]()
 
 # Poster:
 ![System Architecture](poster.png)
 
+
+![System Architecture](IMG_5661.png)
+![System Architecture](IMG_5696.png)
+![System Architecture](IMG_5753.png)
 # Video:
 
 
@@ -316,10 +318,10 @@ roslaunch vision_lyapunov_avoidance min_avoid.launch
 - **Companion Computer**: NVIDIA Jetson (for vision & planning)
 - **Propulsion**: 2216-920KV motors + 1045 propellers
 
-Figure 1: Front view of the UAV platform showing Pixhawk, Companion Computer,  and depth camera
-![System Architecture]()
+Figure: Front view of the UAV platform showing Pixhawk, Companion Computer,  and depth camera
+![System Architecture](6a0b093e372e3255561ac6b85d6fa22c.jpg)
 
-![System Architecture]()
+
 
 
 
