@@ -23,7 +23,6 @@ class OffboardTakeoffVel:
 
         rate = rospy.Rate(self.rate_hz)
 
-        # 预热：先连续发 2-3 秒 0 速度，建立 OFFBOARD 流
         warm = TwistStamped()
         warm.header.stamp = rospy.Time.now()
         for _ in range(int(self.rate_hz*3)):
@@ -35,7 +34,6 @@ class OffboardTakeoffVel:
         self.mode_srv(0, 'OFFBOARD')
         rospy.loginfo("Armed & OFFBOARD. Taking off by velocity to %.2fm", self.alt_target)
 
-        # 爬升阶段：仅给 z 速度，其它由避障节点负责
         tol = 0.10
         while not rospy.is_shutdown() and self.alt < self.alt_target - tol:
             cmd = TwistStamped()
@@ -46,7 +44,6 @@ class OffboardTakeoffVel:
 
         rospy.loginfo("Reached altitude %.2fm, holding z", self.alt)
 
-        # 保持阶段：持续发 0 的 z 速度（不间断流）；x/y 让避障节点来写
         while not rospy.is_shutdown():
             cmd = TwistStamped()
             cmd.header.stamp = rospy.Time.now()
